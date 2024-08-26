@@ -23,55 +23,53 @@ import matplotlib.pyplot as plt
 import random
 from scipy.spatial.transform import Rotation
 
-# def q2r(q):
-#
-#
-# def b2w(q,a):
 
 def q2r(q):
     if len(q.shape) == 3:
-        r = torch.zeros(q.shape[0],q.shape[1],3,3).to("cuda")
-        r[:,:,0,0] = 1-2*q[:,:,2]**2-2*q[:,:,3]**2
-        r[:,:,0,1] = 2*q[:,:,1]*q[:,:,2] - 2*q[:,:,0]*q[:,:,3]
-        r[:,:,0,2] = 2*q[:,:,1]*q[:,:,3] + 2*q[:,:,0]*q[:,:,2]
-        r[:,:,1,0] = 2*q[:,:,1]*q[:,:,2] + 2*q[:,:,0]*q[:,:,3]
-        r[:,:, 1, 1] = 1-2*q[:,:,1]**2-2*q[:,:,3]**2
-        r[:,:, 1, 2] = 2 * q[:, :,2] * q[:, :,3] - 2 * q[:, :,0] * q[:, :,1]
-        r[:,:, 2, 0] = 2 * q[:, :,1] * q[:, :,3] - 2 * q[:, :,0] * q[:, :,2]
-        r[:,:, 2, 1] = 2 * q[:, :,2] * q[:, :,3] + 2 * q[:, :,0] * q[:, :,1]
-        r[:,:, 2, 2] = 1 - 2 * q[:, :,1]**2 - 2 * q[:, :,2]**2
+        r = torch.zeros(q.shape[0], q.shape[1], 3, 3).to("cuda")
+        r[:, :, 0, 0] = 1 - 2 * q[:, :, 2] ** 2 - 2 * q[:, :, 3] ** 2
+        r[:, :, 0, 1] = 2 * q[:, :, 1] * q[:, :, 2] - 2 * q[:, :, 0] * q[:, :, 3]
+        r[:, :, 0, 2] = 2 * q[:, :, 1] * q[:, :, 3] + 2 * q[:, :, 0] * q[:, :, 2]
+        r[:, :, 1, 0] = 2 * q[:, :, 1] * q[:, :, 2] + 2 * q[:, :, 0] * q[:, :, 3]
+        r[:, :, 1, 1] = 1 - 2 * q[:, :, 1] ** 2 - 2 * q[:, :, 3] ** 2
+        r[:, :, 1, 2] = 2 * q[:, :, 2] * q[:, :, 3] - 2 * q[:, :, 0] * q[:, :, 1]
+        r[:, :, 2, 0] = 2 * q[:, :, 1] * q[:, :, 3] - 2 * q[:, :, 0] * q[:, :, 2]
+        r[:, :, 2, 1] = 2 * q[:, :, 2] * q[:, :, 3] + 2 * q[:, :, 0] * q[:, :, 1]
+        r[:, :, 2, 2] = 1 - 2 * q[:, :, 1] ** 2 - 2 * q[:, :, 2] ** 2
 
     elif len(q.shape) == 4:
-        r = torch.zeros(q.shape[0],q.shape[1],q.shape[2],3,3).to("cuda")
-        r[:,:,:,0,0] = 1-2*q[:,:,:,2]**2-2*q[:,:,:,3]**2
-        r[:,:,:,0,1] = 2*q[:,:,:,1]*q[:,:,:,2] - 2*q[:,:,:,0]*q[:,:,:,3]
-        r[:,:,:,0,2] = 2*q[:,:,:,1]*q[:,:,:,3] + 2*q[:,:,:,0]*q[:,:,:,2]
-        r[:,:,:,1,0] = 2*q[:,:,:,1]*q[:,:,:,2] + 2*q[:,:,:,0]*q[:,:,:,3]
-        r[:,:, :,1, 1] = 1-2*q[:,:,:,1]**2-2*q[:,:,:,3]**2
-        r[:,:,:, 1, 2] = 2 * q[:, :,:,2] * q[:, :,:,3] - 2 * q[:, :,:,0] * q[:, :,:,1]
-        r[:,:,:, 2, 0] = 2 * q[:, :,:,1] * q[:, :,:,3] - 2 * q[:, :,:,0] * q[:, :,:,2]
-        r[:,:, :,2, 1] = 2 * q[:, :,:,2] * q[:, :,:,3] + 2 * q[:, :,:,0] * q[:, :,:,1]
-        r[:,:, :,2, 2] = 1 - 2 * q[:, :,:,1]**2 - 2 * q[:, :,:,2]**2
+        r = torch.zeros(q.shape[0], q.shape[1], q.shape[2], 3, 3).to("cuda")
+        r[:, :, :, 0, 0] = 1 - 2 * q[:, :, :, 2] ** 2 - 2 * q[:, :, :, 3] ** 2
+        r[:, :, :, 0, 1] = 2 * q[:, :, :, 1] * q[:, :, :, 2] - 2 * q[:, :, :, 0] * q[:, :, :, 3]
+        r[:, :, :, 0, 2] = 2 * q[:, :, :, 1] * q[:, :, :, 3] + 2 * q[:, :, :, 0] * q[:, :, :, 2]
+        r[:, :, :, 1, 0] = 2 * q[:, :, :, 1] * q[:, :, :, 2] + 2 * q[:, :, :, 0] * q[:, :, :, 3]
+        r[:, :, :, 1, 1] = 1 - 2 * q[:, :, :, 1] ** 2 - 2 * q[:, :, :, 3] ** 2
+        r[:, :, :, 1, 2] = 2 * q[:, :, :, 2] * q[:, :, :, 3] - 2 * q[:, :, :, 0] * q[:, :, :, 1]
+        r[:, :, :, 2, 0] = 2 * q[:, :, :, 1] * q[:, :, :, 3] - 2 * q[:, :, :, 0] * q[:, :, :, 2]
+        r[:, :, :, 2, 1] = 2 * q[:, :, :, 2] * q[:, :, :, 3] + 2 * q[:, :, :, 0] * q[:, :, :, 1]
+        r[:, :, :, 2, 2] = 1 - 2 * q[:, :, :, 1] ** 2 - 2 * q[:, :, :, 2] ** 2
 
     return r
 
-
-def jifen_v(dt,acc_inter,device,args,k=1,r = None):
+    """
+        对acc积分得到速度变化
+    """
+def jifen_v(dt, acc_inter, device, args, k=1, r=None):
     dt_temp = dt.to(device)
     if acc_inter.shape[2] == 3:
-        acc_inter_temp = acc_inter.permute(0,2,1).to(device)
+        acc_inter_temp = acc_inter.permute(0, 2, 1).to(device)
     else:
         acc_inter_temp = acc_inter.to(device)
-    acc_inter_temp = acc_inter_temp[:,:,int(args.past_time*args.imu_freq):].to(device)
-    dt_temp = dt_temp[:,:,int(args.past_time*args.imu_freq):].to(device)
-    gravity = torch.tensor([[[0], [0], [- 9.8]]]).repeat((acc_inter.shape[0],1,1)).to(device) # blackbird是 +9.8
+    acc_inter_temp = acc_inter_temp[:, :, int(args.past_time * args.imu_freq):].to(device) #根据 args.past_time 和 args.imu_freq 计算出需要的时间段，并从 acc_inter_temp 中截取该时间段的数据
+    dt_temp = dt_temp[:, :, int(args.past_time * args.imu_freq):].to(device)
+    gravity = torch.tensor([[[0], [0], [- 9.8]]]).repeat((acc_inter.shape[0], 1, 1)).to(device)  # blackbird是 +9.8
     # dt = np.expand_dims(dt, 1).repeat(3, axis=1)
     if r is None:
         gravity_new = gravity.clone()
         if type(k) == int:
             gravity_new[:, 2, :] = k * gravity[:, 2, :]
         else:
-            gravity_new[:,2,:] = k.unsqueeze(1) * gravity[:,2,:]
+            gravity_new[:, 2, :] = k.unsqueeze(1) * gravity[:, 2, :]
     else:
         r = r.to(device)
         gravity_r = torch.einsum("tip,tpk->tik", r, gravity)
@@ -79,13 +77,12 @@ def jifen_v(dt,acc_inter,device,args,k=1,r = None):
         if type(k) == int:
             gravity_new[:, 2, :] = k * gravity_r[:, 2, :]
         else:
-            gravity_new[:, 2, :] = k.unsqueeze(1)  * gravity_r[:, 2, :]
+            gravity_new[:, 2, :] = k.unsqueeze(1) * gravity_r[:, 2, :]
 
     # delta_v = (0.5 * (acc_inter_temp[:,:,:-1] + acc_inter_temp[:,:,1:]).to(device) +  gravity_new) * dt_temp[:,:,:-1]
-    delta_v = ( acc_inter_temp[:, :, :].to(device) + gravity_new ) * dt_temp[:, :, :]
-    delta_v_integrate = torch.sum(delta_v[:,:,:], axis=2)
+    delta_v = (acc_inter_temp[:, :, :].to(device) + gravity_new) * dt_temp[:, :, :]
+    delta_v_integrate = torch.sum(delta_v[:, :, :], axis=2)   #一个区间预测的速度(积分加速度)
     return delta_v_integrate
-
 
 
 def get_datalist(list_path):
@@ -97,8 +94,9 @@ def get_datalist(list_path):
 def torch_to_numpy(torch_arr):
     return torch_arr.cpu().detach().numpy()
 
-def g_rotation(roll,pitch,batch_size):
-    g_r = torch.eye(3).repeat(batch_size,1,1)
+
+def g_rotation(roll, pitch, batch_size):
+    g_r = torch.eye(3).repeat(batch_size, 1, 1)
     g_roll = g_r.clone()
     g_roll[:, 1, 1] = torch.cos(roll)
     g_roll[:, 2, 2] = torch.cos(roll)
@@ -111,9 +109,10 @@ def g_rotation(roll,pitch,batch_size):
     g_pitch[:, 2, 0] = torch.sin(pitch)
     g_pitch[:, 0, 2] = - torch.sin(pitch)
 
-    return torch.einsum("tik,tkj -> tij",g_roll,g_pitch)
+    return torch.einsum("tik,tkj -> tij", g_roll, g_pitch)
 
-def get_inference(network, data_loader, device, epoch,args):
+
+def get_inference(network, data_loader, device, epoch, args):
     """
     Obtain attributes from a data loader given a network state
     Outputs all targets, predicts, predicted covariance params, and losses in numpy arrays
@@ -122,7 +121,7 @@ def get_inference(network, data_loader, device, epoch,args):
     targets_all, preds_all, preds_cov_all, losses_all = [], [], [], []
     network.eval()
 
-    for bid, (feat, targ,ts_inter,ori_r,_, _) in enumerate(data_loader):
+    for bid, (feat, targ, ts_inter, ori_r, _, _) in enumerate(data_loader):
         if args.arch == "resnet":
             feat, targ = feat.to(device), targ.to(device)
             ts_inter = ts_inter.unsqueeze(1)
@@ -130,12 +129,14 @@ def get_inference(network, data_loader, device, epoch,args):
 
             pred = network(feat[:, 3:6, :].to(device))
 
-            a_body =  (feat[:, 3:6,:].to(device) + pred.unsqueeze(2).repeat(1,1, feat[:, 3:6,:].shape[2])).permute(0,2,1)
-            a_world = torch.einsum("atip,atp->ati", ori_r, a_body).permute(0,2,1)
+            a_body = (feat[:, 3:6, :].to(device) + pred.unsqueeze(2).repeat(1, 1, feat[:, 3:6, :].shape[2])).permute(0,
+                                                                                                                     2,
+                                                                                                                     1)
+            a_world = torch.einsum("atip,atp->ati", ori_r, a_body).permute(0, 2, 1)
 
-            pred = jifen_v(ts_inter, a_world,device, args,r=None,k=1).to(device)
+            pred = jifen_v(ts_inter, a_world, device, args, r=None, k=1).to(device)
 
-            loss = get_loss(pred, _, targ , epoch).to(device)
+            loss = get_loss(pred, _, targ, epoch).to(device)  # targ是gt_dv
 
         targets_all.append(torch_to_numpy(targ))
         preds_all.append(torch_to_numpy(pred))
@@ -152,7 +153,7 @@ def get_inference(network, data_loader, device, epoch,args):
     return attr_dict
 
 
-def do_train(network, train_loader, device, epoch, optimizer,args):
+def do_train(network, train_loader, device, epoch, optimizer, args):
     """
     Train network for one epoch using a specified data loader
     Outputs all targets, predicts, predicted covariance params, and losses in numpy arrays
@@ -160,23 +161,26 @@ def do_train(network, train_loader, device, epoch, optimizer,args):
     train_targets, train_preds, train_preds_cov, train_losses = [], [], [], []
     network.train()
 
-    for bid, (feat, targ, ts_inter,ori_r,_, _) in enumerate(train_loader):
+    # 遍历train_loader 中的每个批次。每个批次包含特征 feat、目标值 targ、时间间隔 ts_inter、原始旋转 ori_r等数据
+    # 这些数据与在DataSet中的__getitem__中定义的返回值一致
+    for bid, (feat, targ, ts_inter, ori_r, _, _) in enumerate(train_loader):
         if args.arch == "resnet":
             feat, targ = feat.to(device), targ.to(device)
             optimizer.zero_grad()
             ts_inter = ts_inter.unsqueeze(1)
             ori_r = ori_r.to(device)
 
-            pred = network(feat[:, 3:6, :].to(device))
+            pred = network(feat[:, 3:6, :].to(device))  #把acc输入到网络中，进行前向传播，传播后的是de-bias的acc?
+            # 从 feat 张量中提取通道 3 到 5 的数据；将 pred 张量扩展到与 feat 张量相同的长度；将 feat 张量和扩展后的 pred 张量逐元素相加；重新排列张量的维度顺序
+            a_body = (feat[:, 3:6, :].to(device) + pred.unsqueeze(2).repeat(1, 1, feat[:, 3:6, :].shape[2])).permute(0,2,1)
 
-            a_body =  (feat[:, 3:6,:].to(device) + pred.unsqueeze(2).repeat(1,1, feat[:, 3:6,:].shape[2])).permute(0,2,1)
-            a_world = torch.einsum("atip,atp->ati", ori_r, a_body).permute(0,2,1)
+            a_world = torch.einsum("atip,atp->ati", ori_r, a_body).permute(0, 2, 1) # 对 ori_r 张量中的每个元素和 a_body 张量中的对应元素进行逐元素相乘、相加
 
-            pred = jifen_v(ts_inter, a_world,device, args,r=None,k=1).to(device)
+            pred = jifen_v(ts_inter, a_world, device, args, r=None, k=1).to(device)
 
-            loss = get_loss(pred, _, targ, epoch) .to(device)
+            loss = get_loss(pred, _, targ, epoch).to(device)
 
-        train_targets.append(torch_to_numpy( targ))
+        train_targets.append(torch_to_numpy(targ))
         train_preds.append(torch_to_numpy(pred))
         train_losses.append(torch_to_numpy(loss))
 
@@ -196,7 +200,7 @@ def do_train(network, train_loader, device, epoch, optimizer,args):
     return train_attr_dict
 
 
-def write_summary(summary_writer, attr_dict, epoch, optimizer, mode,args):
+def write_summary(summary_writer, attr_dict, epoch, optimizer, mode, args):
     """ Given the attr_dict write summary and log the losses """
     mse_loss = np.mean((attr_dict["targets"] - attr_dict["preds"]) ** 2, axis=0)
     ml_loss = np.average(attr_dict["losses"])
@@ -257,11 +261,11 @@ def arg_conversion(args):
     )
     net_config = {
         "in_dim": (
-            data_window_config["past_data_size"]
-            + data_window_config["window_size"]
-            + data_window_config["future_data_size"]
-        )
-        // 4 ## jcx
+                          data_window_config["past_data_size"]
+                          + data_window_config["window_size"]
+                          + data_window_config["future_data_size"]
+                  )
+                  // 4  ## jcx
     }
 
     return data_window_config, net_config
@@ -285,7 +289,7 @@ def net_train(args):
             if not osp.isdir(osp.join(args.out_dir, "logs")):
                 os.makedirs(osp.join(args.out_dir, "logs"))
             with open(
-                os.path.join(args.out_dir, "parameters.json"), "w"
+                    os.path.join(args.out_dir, "parameters.json"), "w"
             ) as parameters_file:
                 parameters_file.write(json.dumps(vars(args), sort_keys=True, indent=4))
             logging.info(f"Training output writes to {args.out_dir}")
@@ -310,33 +314,28 @@ def net_train(args):
     # Display
     np.set_printoptions(formatter={"all": "{:.6f}".format})
     logging.info(f"Training/testing with {args.imu_freq} Hz IMU data")
-    logging.info(
-        "Size: "
-        + str(data_window_config["past_data_size"])
-        + "+"
-        + str(data_window_config["window_size"])
-        + "+"
-        + str(data_window_config["future_data_size"])
-        + ", "
-        + "Time: "
-        + str(args.past_time)
-        + "+"
-        + str(args.window_time)
-        + "+"
-        + str(args.future_time)
-    )
+    logging.info("Size: "
+                 + str(data_window_config["past_data_size"])
+                 + "+"
+                 + str(data_window_config["window_size"])
+                 + "+"
+                 + str(data_window_config["future_data_size"])
+                 + ", "
+                 + "Time: "
+                 + str(args.past_time)
+                 + "+"
+                 + str(args.window_time)
+                 + "+"
+                 + str(args.future_time))
     logging.info("Sample frequency: %s" % args.sample_freq)
 
     train_loader, val_loader = None, None
     start_t = time.time()
     train_list = get_datalist(args.train_list)
     try:
-        train_dataset = FbSequenceDataset(
-            args.root_dir, train_list, args, data_window_config, mode="train"
-        )
-        train_loader = DataLoader(
-            train_dataset, batch_size=args.batch_size, shuffle=True
-        )
+        train_dataset = FbSequenceDataset(args.root_dir, train_list, args, data_window_config, mode="train")
+        # DataLoader根据train_dataset中定义的__getitem__ 和 __len__ 方法来加载数据，并返回
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     except OSError as e:
         logging.error(e)
         return
@@ -357,20 +356,16 @@ def net_train(args):
         logging.info("Validation set loaded.")
         logging.info(f"Number of val samples: {len(val_dataset)}")
 
-    device = torch.device(
-        "cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu"
-    )
-    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(
-        device
-    )
+    device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+
+    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(device)
+
     total_params = network.get_num_params()
     logging.info(f'Network "{args.arch}" loaded to device {device}')
     logging.info(f"Total number of parameters: {total_params}")
 
     optimizer = torch.optim.Adam(network.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=0.1, patience=10, verbose=True, eps=1e-12
-    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=10, verbose=True, eps=1e-12)
     logging.info(f"Optimizer: {optimizer}, Scheduler: {scheduler}")
 
     start_epoch = 0
@@ -388,19 +383,20 @@ def net_train(args):
             start_epoch = checkpoints.get("epoch", 0)
             network.load_state_dict(checkpoints.get("model_state_dict"))
             optimizer.load_state_dict(checkpoints.get("optimizer_state_dict"))
-            logging.info(
-                f"Detected saved checkpoint, starting from epoch {start_epoch}"
-            )
+            logging.info(f"Detected saved checkpoint, starting from epoch {start_epoch}")
 
     summary_writer = SummaryWriter(osp.join(args.out_dir, "logs"))
     summary_writer.add_text("info", f"total_param: {total_params}")
 
     logging.info(f"-------------- Init, Epoch {start_epoch} --------------")
-    attr_dict = get_inference(network, train_loader, device, start_epoch,args)
-    write_summary(summary_writer, attr_dict, start_epoch, optimizer, "train",args)
+
+    attr_dict = get_inference(network, train_loader, device, start_epoch, args)
+
+    write_summary(summary_writer, attr_dict, start_epoch, optimizer, "train", args)
+
     if val_loader is not None:
-        attr_dict = get_inference(network, val_loader, device, start_epoch,args)
-        write_summary(summary_writer, attr_dict, start_epoch, optimizer, "val",args)
+        attr_dict = get_inference(network, val_loader, device, start_epoch, args)
+        write_summary(summary_writer, attr_dict, start_epoch, optimizer, "val", args)
 
     def stop_signal_handler(args, epoch, network, optimizer, signal, frame):
         logging.info("-" * 30)
@@ -410,24 +406,21 @@ def net_train(args):
 
     best_val_loss = np.inf
     for epoch in range(start_epoch + 1, args.epochs):
-        signal.signal(
-            signal.SIGINT, partial(stop_signal_handler, args, epoch, network, optimizer)
-        )
-        signal.signal(
-            signal.SIGTERM,
-            partial(stop_signal_handler, args, epoch, network, optimizer),
-        )
+        signal.signal(signal.SIGINT, partial(stop_signal_handler, args, epoch, network, optimizer))
+        signal.signal(signal.SIGTERM, partial(stop_signal_handler, args, epoch, network, optimizer), )
 
         logging.info(f"-------------- Training, Epoch {epoch} ---------------")
         start_t = time.time()
-        train_attr_dict = do_train(network, train_loader, device, epoch, optimizer,args)
-        write_summary(summary_writer, train_attr_dict, epoch, optimizer, "train",args)
+
+        train_attr_dict = do_train(network, train_loader, device, epoch, optimizer, args)
+
+        write_summary(summary_writer, train_attr_dict, epoch, optimizer, "train", args)
         end_t = time.time()
         logging.info(f"time usage: {end_t - start_t:.3f}s")
 
         if val_loader is not None:
-            val_attr_dict = get_inference(network, val_loader, device, epoch,args)
-            write_summary(summary_writer, val_attr_dict, epoch, optimizer, "val",args)
+            val_attr_dict = get_inference(network, val_loader, device, epoch, args)
+            write_summary(summary_writer, val_attr_dict, epoch, optimizer, "val", args)
             if np.mean(val_attr_dict["losses"]) < best_val_loss:
                 best_val_loss = np.mean(val_attr_dict["losses"])
                 save_model(args, epoch, network, optimizer)

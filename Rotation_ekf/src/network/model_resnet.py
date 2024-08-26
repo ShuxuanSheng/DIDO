@@ -27,7 +27,10 @@ class BasicBlock1D(nn.Module):
     """ Supports: groups=1, dilation=1 """
 
     expansion = 1
-
+    # in_planes是输入特征图的通道数
+    # planes是第一个卷积层输出特征图的通道数
+    # stride是卷积操作的步幅，默认值为1
+    # downsample是一个可选参数，用于在需要时对输入特征图进行下采样
     def __init__(self, in_planes, planes, stride=1, downsample=None):
         super(BasicBlock1D, self).__init__()
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
@@ -164,15 +167,14 @@ class ResNet1D(nn.Module):
 
         # Input module
         self.input_block = nn.Sequential(
-            nn.Conv1d(
-                in_dim, self.base_plane, kernel_size=7, stride=2, padding=3, bias=False
-            ),
+            nn.Conv1d(in_dim, self.base_plane, kernel_size=7, stride=2, padding=3, bias=False),
             nn.BatchNorm1d(self.base_plane),
             nn.ReLU(inplace=True),
             nn.MaxPool1d(kernel_size=3, stride=2, padding=1),
         )
 
         # Residual groups
+        # 使用给定的残差块（block）构造多个残差块（Residual Blocks），这里block是BasicBlock1D
         self.residual_groups = nn.Sequential(
             self._make_residual_group1d(block_type, 64, group_sizes[0], stride=1),
             # self._make_residual_group1d(block_type, 128, group_sizes[1], stride=2),
@@ -185,18 +187,19 @@ class ResNet1D(nn.Module):
 
         self._initialize(zero_init_residual)
 
+
     def _make_residual_group1d(self, block, planes, group_size, stride=1):
         downsample = None
+        # 如果步幅（stride）不等于1，或者当前的输入通道数（self.inplanes）与目标输出通道数（planes * block.expansion）不匹配，则需要使用下采样层来调整特征图的维度。
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride=stride),
                 nn.BatchNorm1d(planes * block.expansion),
             )
 
+        # 创建残差块组
         layers = []
-        layers.append(
-            block(self.inplanes, planes, stride=stride, downsample=downsample)
-        )
+        layers.append(block(self.inplanes, planes, stride=stride, downsample=downsample))
         self.inplanes = planes * block.expansion
         for _ in range(1, group_size):
             layers.append(block(self.inplanes, planes))
@@ -228,8 +231,8 @@ class ResNet1D(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def forward(self, raw_x):
-        x = self.input_block(raw_x)
-        x = self.residual_groups(x)
+        x = self.input_block(raw_x)  #self.input_block是一个网络模块，如卷积等，用于对输入数据进行初步处理
+        x = self.residual_groups(x)  #self.residual_groups是一个网络模块，通常用于实现残差网络（Residual Network）中的残差块
         x1 = self.output_block1(x)  # mean
 
         return x1

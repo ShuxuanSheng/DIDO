@@ -12,7 +12,7 @@ from os import path as osp
 
 import numpy as np
 import torch
-from dataloader.dataset_fb import FbSequenceDataset
+from ..dataloader.dataset_fb import FbSequenceDataset
 from network.model_factory import get_model
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -282,6 +282,7 @@ def net_train(args):
     """
     Main function for network training
     """
+    # 对一些路径是否被指定进行校验
     try:
         if args.root_dir is None:
             raise ValueError("root_dir must be specified.")
@@ -341,6 +342,7 @@ def net_train(args):
     start_t = time.time()
     train_list = get_datalist(args.train_list)
     try:
+        #
         train_dataset = FbSequenceDataset(
             args.root_dir, train_list, args, data_window_config, mode="train"
         )

@@ -25,10 +25,8 @@ def vel_integrate(args, dataset, preds):
     dp_t = args.window_time
     pred_vels = preds / dp_t
 
-    ind = np.array([i[1] for i in dataset.index_map], dtype=np.int)
-    delta_int = int(
-        args.window_time * args.imu_freq / 2.0
-    )  # velocity as the middle of the segment
+    ind = np.array([i[1] for i in dataset.index_map])
+    delta_int = int(args.window_time * args.imu_freq / 2.0)  # velocity as the middle of the segment
     if not (args.window_time * args.imu_freq / 2.0).is_integer():
         logging.info("Trajectory integration point is not centered.")
     ind_intg = ind + delta_int  # the indices of doing integral
@@ -36,12 +34,15 @@ def vel_integrate(args, dataset, preds):
     ts = dataset.ts[0]
     dts = np.mean(ts[ind_intg[1:]] - ts[ind_intg[:-1]])
     vel_intg = np.zeros([pred_vels.shape[0] + 1, args.output_dim])
+
     vel_intg[0] = dataset.gt_vel[0][ind_intg[0], :]
-    vel_intg[1:] = np.cumsum(pred_vels[:, :] * dts, axis=0) + vel_intg[0]
+
+    vel_intg[1:] = np.cumsum(pred_vels[:, :] * dts, axis=0) + vel_intg[0] #通过累积预测的速度和时间间隔来计算速度的积分值
+
     ts_intg = np.append(ts[ind_intg], ts[ind_intg[-1]] + dts)
 
     ts_in_range = ts[ind_intg[0] : ind_intg[-1]]  # s
-    vel_pred = interp1d(ts_intg, vel_intg, axis=0)(ts_in_range)
+    vel_pred = interp1d(ts_intg, vel_intg, axis=0)(ts_in_range) #通过插值函数 interp1d 对预测速度进行插值，匹配实际的时间戳
     vel_gt = dataset.gt_vel[0][ind_intg[0] : ind_intg[-1], :]
 
     traj_attr_dict = {
@@ -312,13 +313,10 @@ def net_test(args):
 
     test_list = get_datalist(args.test_list)
 
-    device = torch.device(
-        "cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu"
-    )
+    device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+    logging.info(f"torch.cuda.is_available() = {torch.cuda.is_available()}")
     checkpoint = torch.load(args.model_path, map_location=device)
-    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(
-        device
-    )
+    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(device)
     network.load_state_dict(checkpoint["model_state_dict"])
     network.eval()
     logging.info(f"Model {args.model_path} loaded to device {device}.")
@@ -329,9 +327,7 @@ def net_test(args):
     for data in test_list:
         logging.info(f"Processing {data}...")
         try:
-            seq_dataset = FbSequenceDataset(
-                args.root_dir, [data], args, data_window_config, mode="test"
-            )
+            seq_dataset = FbSequenceDataset(args.root_dir, [data], args, data_window_config, mode="test")
             seq_loader = DataLoader(seq_dataset, batch_size=128, shuffle=False)
         except OSError as e:
             print(e)
@@ -339,6 +335,7 @@ def net_test(args):
 
         # Obtain trajectory
         net_attr_dict = get_inference(network, seq_loader, device, epoch=50,args=args)
+
         traj_attr_dict = vel_integrate(args, seq_dataset, net_attr_dict["preds"])
         outdir = osp.join(args.out_dir, data)
         if osp.exists(outdir) is False:
@@ -355,9 +352,7 @@ def net_test(args):
         np.savetxt(outfile, trajectory_data, delimiter=",")
 
         # obtain metrics
-        metrics, plot_dict = compute_metrics_and_plotting(
-            args, net_attr_dict, traj_attr_dict
-        )
+        metrics, plot_dict = compute_metrics_and_plotting(args, net_attr_dict, traj_attr_dict)
         logging.info(metrics)
         all_metrics[data] = metrics
 

@@ -40,6 +40,16 @@ class CompiledSequence(ABC):
     def get_r(self):
         pass
 
+    """
+        读取一个sequence的数据
+    """
+
+
+"""
+    FbSequence:Fixed-Bias Sequence 带有bias的数据序列
+"""
+
+
 class FbSequence(CompiledSequence):
     def __init__(self, data_path, args, data_window_config, **kwargs):
         super().__init__(**kwargs)
@@ -57,11 +67,15 @@ class FbSequence(CompiledSequence):
         self.interval = data_window_config["window_size"]
         self.mode = kwargs.get("mode", "train")
 
+        # 从h5文件中读取数据
         if data_path is not None:
             self.load(data_path)
 
-    def load(self, data_path):
+    """
+        加载hdf5文件
+    """
 
+    def load(self, data_path):
         with h5py.File(osp.join(data_path, "data.hdf5"), "r") as f:
             ts = np.copy(f["ts"])
             gt_q = np.copy(f["gt_q"])
@@ -81,7 +95,7 @@ class FbSequence(CompiledSequence):
         dt = np.expand_dims(np.diff(ts), 1)
 
         # ground truth displacement
-        gt_dv = gt_v[self.interval :] - gt_v[: -self.interval]
+        gt_dv = gt_v[self.interval:] - gt_v[: -self.interval]
 
         ori_R_gt = Rotation.from_quat(gt_q[:, [1, 2, 3, 0]])
 
@@ -106,8 +120,10 @@ class FbSequence(CompiledSequence):
         return np.concatenate(
             [self.ts[:, None], self.orientations, self.gt_pos, self.gt_ori], axis=1
         )
+
     def get_r(self):
         return self.ori_r
+
 
 class FbSequenceDataset(Dataset):
     def __init__(self, root_dir, data_list, args, data_window_config, **kwargs):
@@ -131,7 +147,7 @@ class FbSequenceDataset(Dataset):
             self.shuffle = False
 
         self.index_map = []
-        self.ts, self.orientations, self.gt_pos, self.gt_ori, self.ori_r = [], [], [], [],[]
+        self.ts, self.orientations, self.gt_pos, self.gt_ori, self.ori_r = [], [], [], [], []
         self.features, self.targets = [], []
         self.no_yaw_q = []
         self.gt_q = []
@@ -140,7 +156,7 @@ class FbSequenceDataset(Dataset):
             seq = FbSequence(
                 osp.join(root_dir, data_list[i]), args, data_window_config, **kwargs
             )
-            feat, targ, aux ,ori_r = seq.get_feature(), seq.get_target(), seq.get_aux(), seq.get_r()
+            feat, targ, aux, ori_r = seq.get_feature(), seq.get_target(), seq.get_aux(), seq.get_r()  # feature是imu数据(acc+gyr)
             self.features.append(feat)
             self.targets.append(targ)
             self.ts.append(aux[:, 0])
@@ -149,6 +165,8 @@ class FbSequenceDataset(Dataset):
             self.gt_ori.append(aux[:, 8:12])
             self.ori_r.append(ori_r)
             self.gt_vel.append(seq.gt_vel)
+            # self.index_map是一个列表，
+            # 列表推导式 [ [i, j] for j in range(...) ] 用于生成一系列 [i, j] 索引对
             self.index_map += [
                 [i, j]
                 for j in range(
@@ -161,34 +179,31 @@ class FbSequenceDataset(Dataset):
         if self.shuffle:
             random.shuffle(self.index_map)
 
+    """
+        根据传入的 item 索引从 index_map 中获取对应的数据序列和帧位置
+        然后提取相应的特征数据、目标数据、时间间隔和方向旋转数据，并返回这些数据为模型提供一个完整的时间窗口数据用于训练、验证或测试。
+    """
+
     def __getitem__(self, item):
+        # self.index_map[item] 获取的是 [seq_id, frame_id] 这个索引对，其中 seq_id 是数据序列的 ID，frame_id 是序列中帧的索引
         seq_id, frame_id = self.index_map[item][0], self.index_map[item][1]
 
         # in the world frame
-        feat = self.features[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        # 从 self.features[seq_id] 中提取特定窗口的特征数据。
+        # 窗口的范围是：frame_id - self.past_data_size到frame_id + self.window_size + self.future_data_size
+        feat = self.features[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
+
         targ = self.targets[seq_id][frame_id]  # the beginning of the sequence
 
-        ts_inter = self.ts[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
-        ts_inter_old = np.append(ts_inter[0], ts_inter[:-1])
-        dt = ts_inter - ts_inter_old
-        ori_r = self.ori_r[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        ts_inter = self.ts[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
 
-        return feat.astype(np.float32).T, targ.astype(np.float32), dt, ori_r.astype(np.float32) ,seq_id, frame_id
+        ts_inter_old = np.append(ts_inter[0], ts_inter[:-1])
+
+        dt = ts_inter - ts_inter_old
+
+        ori_r = self.ori_r[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
+
+        return feat.astype(np.float32).T, targ.astype(np.float32), dt, ori_r.astype(np.float32), seq_id, frame_id
 
     def __len__(self):
         return len(self.index_map)

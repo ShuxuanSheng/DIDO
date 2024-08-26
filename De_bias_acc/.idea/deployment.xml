@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="meister@192.168.112.80:22 password (3)" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="meister@192.168.112.80:22 password (3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/meister/SSX/DIDO/De_bias_acc/src" local="$PROJECT_DIR$/src" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

@@ -113,6 +113,11 @@ class FbSequence(CompiledSequence):
             [self.ts[:, None]], axis=1
         )
 
+# FbSequenceDataset继承自pytorch提供的抽象类Dataset，根另一个类DataLoader配合使用
+# 抽象类用于定义一组接口（方法和属性），这些接口在必须在派生类中必须实现，类似于c++中的纯虚类
+# 包括三个方法：__init__(构造函数)，用来定义接收和初始化数据集需要的参数，如数据路径、数据、标签等
+# __getitem__根据给定的索引返回一个数据样本，DataLoader 将通过这个方法获取数据样本。参数是item（整数），表示要获取的数据样本的索引，返回: 一个包含数据样本和标签（如果有）的元组。
+# __len__ 返回数据集中样本的数量，使得 DataLoader 知道数据集的大小。
 class FbSequenceDataset(Dataset):
     def __init__(self, root_dir, data_list, args, data_window_config, **kwargs):
         super(FbSequenceDataset, self).__init__()

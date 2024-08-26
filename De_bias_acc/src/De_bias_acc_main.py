@@ -26,12 +26,10 @@ if __name__ == "__main__":
     parser.add_argument("--train_list", type=str, default="../../dataset/train.txt")
     parser.add_argument("--val_list", type=str, default="../../dataset/val.txt")
     parser.add_argument("--test_list", type=str, default="../../dataset/test.txt")
-    parser.add_argument(
-        "--root_dir", type=str, default="../../dataset", help="Path to data directory"
-    )
+    parser.add_argument("--root_dir", type=str, default="../../dataset", help="Path to data directory")
 
     parser.add_argument("--out_dir", type=str, default="../train_output")
-    parser.add_argument("--model_path", type=str, default="../train_output/checkpoints/checkpoint_451.pt")
+    parser.add_argument("--model_path", type=str, default="../train_output/checkpoints/checkpoint_latest.pt")
     parser.add_argument("--continue_from", type=str, default=None)
 
     # ------------------ architecture and training -----------------
@@ -44,12 +42,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_dim", type=int, default=3)
 
     # ------------------ commons -----------------
-    parser.add_argument(
-        "--mode", type=str, default="train", choices=["train", "test", "eval"]
-    )
-    parser.add_argument(
-        "--imu_freq", type=float, default=400.0, help="imu_base_freq is a multiple"
-    )
+    parser.add_argument("--mode", type=str, default="test", choices=["train", "test", "eval"])
+    parser.add_argument("--imu_freq", type=float, default=400.0, help="imu_base_freq is a multiple")
     parser.add_argument("--imu_base_freq", type=float, default=400.0)
 
     # ----- window size and inference freq -----

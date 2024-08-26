@@ -148,10 +148,10 @@ class gravity_align_EKF:
         self.g_noise = self.noises
 
 
-    def _compute_all(self, frame: str) -> np.ndarray:
+    def _compute_all(self, frame: str) -> np.ndarray:  #指定函数返回值的类型为np.ndarray
 
         num_samples = len(self.acc)
-        Q = np.zeros((num_samples, 4))
+        Q = np.zeros((num_samples, 4)) # 存放四元数结果
         Q[0] = self.q0
 
         ###### Compute attitude with IMU architecture ######
