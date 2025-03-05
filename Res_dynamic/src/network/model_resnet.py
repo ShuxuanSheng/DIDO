@@ -25,10 +25,13 @@ def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
+'''
+    ResNet的基本残差块，在包括卷积层、批量归一化层、Relu激活层
+'''
 class BasicBlock1D(nn.Module):
     """ Supports: groups=1, dilation=1 """
 
-    expansion = 1
+    expansion = 1  #表示该模块的输出通道数不会扩展
 
     def __init__(self, in_planes, planes, stride=1, downsample=None):
         super(BasicBlock1D, self).__init__()
@@ -42,7 +45,7 @@ class BasicBlock1D(nn.Module):
         self.downsample = downsample
 
     def forward(self, x):
-        identity = x
+        identity = x  #保存输入数据，用于后续的残差连接
 
         out = self.conv1(x)
         out = self.bn1(out)
@@ -70,15 +73,15 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(
-        self,
-        inplanes,
-        planes,
-        stride=1,
-        downsample=None,
-        groups=1,
-        base_width=64,
-        dilation=1,
-        norm_layer=None,
+            self,
+            inplanes,
+            planes,
+            stride=1,
+            downsample=None,
+            groups=1,
+            base_width=64,
+            dilation=1,
+            norm_layer=None,
     ):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
@@ -125,12 +128,12 @@ class FcBlock(nn.Module):
         self.out_channel = out_channel
         self.prep_channel = 64
         self.fc_dim = 32
-        self.in_dim = in_dim   # multi_resnet 5s时 - 25 , 100s时间 - 619
+        self.in_dim = in_dim  # multi_resnet 5s时 - 25 , 100s时间 - 619
 
         # prep layer2
-        self.prep1 = nn.Conv1d(
-            self.in_channel, self.prep_channel, kernel_size=1, bias=False
-        )
+        # 将输入的多通道序列数据通过一个一维卷积层进行特征提取。
+        # 这一步将输入数据从 in_channel 个通道转换为 prep_channel 个通道
+        self.prep1 = nn.Conv1d(self.in_channel, self.prep_channel, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm1d(self.prep_channel)
         # fc layers
         self.fc1 = nn.Linear(self.prep_channel * self.in_dim, self.fc_dim)
@@ -142,7 +145,7 @@ class FcBlock(nn.Module):
     def forward(self, x):
         x = self.prep1(x)
         x = self.bn1(x)
-        x = self.fc1(x.view(x.size(0), -1))
+        x = self.fc1(x.view(x.size(0), -1)) #将卷积层的输出展平，使其适应全连接层的输入要求
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)
@@ -154,38 +157,38 @@ class FcBlock(nn.Module):
 
 class ResNet1D(nn.Module):
     """
+    default：
     ResNet 1D
     in_dim: input channel (for IMU data, in_dim=6)
     out_dim: output dimension (3)
     len(group_sizes) = 4
     """
 
-    def __init__(
-        self,
-        block_type,
-        in_dim,
-        out_dim,
-        group_sizes,
-        inter_dim,
-        zero_init_residual=False,
-    ):
+    def __init__(self,
+                 block_type,  #基本残差块的类型，在BasicBlock1D中定义
+                 in_dim,
+                 out_dim,
+                 group_sizes,  #指定基本残差块的个数
+                 inter_dim,  #在全连接层中使用的中间维度
+                 zero_init_residual=False, #是否对残差块的权重进行零初始化
+                 ):
         super(ResNet1D, self).__init__()
-        self.base_plane = 64
+        self.base_plane = 64  #基础通道数，即第一个卷积层的输出通道数
         self.inplanes = self.base_plane
 
         # Input module
+        # 包括7*7巻积层、批量规范化层、激活层以及最大池化层，如d2l-zh-pytorch.pdf中图7.6.4所示
         self.input_block = nn.Sequential(
-            nn.Conv1d(
-                in_dim, self.base_plane, kernel_size=7, stride=2, padding=3, bias=False
-            ),
+            nn.Conv1d(in_dim, self.base_plane, kernel_size=7, stride=2, padding=3, bias=False),
             nn.BatchNorm1d(self.base_plane),
             nn.ReLU(inplace=True),
             nn.MaxPool1d(kernel_size=3, stride=2, padding=1),
         )
 
         # Residual groups
+        # self.residual_groups 是 nn.Sequential 的实例，参数隐式传递给其中的forward()，顺序执行
         self.residual_groups = nn.Sequential(
-            self._make_residual_group1d(block_type, 64, group_sizes[0], stride=1),
+            self._make_residual_group1d(block_type, 64, group_sizes[0], stride=1), #返回的 Sequential 被添加到 residual_groups 中
             # self._make_residual_group1d(block_type, 128, group_sizes[1], stride=2),
             # self._make_residual_group1d(block_type, 256, group_sizes[2], stride=2),
             # self._make_residual_group1d(block_type, 512, group_sizes[3], stride=2),
@@ -197,6 +200,9 @@ class ResNet1D(nn.Module):
 
         self._initialize(zero_init_residual)
 
+    '''
+        根据残差块构建残差组
+    '''
     def _make_residual_group1d(self, block, planes, group_size, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -206,10 +212,9 @@ class ResNet1D(nn.Module):
             )
 
         layers = []
-        layers.append(
-            block(self.inplanes, planes, stride=stride, downsample=downsample)
-        )
+        layers.append(block(self.inplanes, planes, stride=stride, downsample=downsample))
         self.inplanes = planes * block.expansion
+        # 循环添加group_size -1 个 block
         for _ in range(1, group_size):
             layers.append(block(self.inplanes, planes))
 
@@ -231,7 +236,7 @@ class ResNet1D(nn.Module):
         # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
         if zero_init_residual:
             for m in self.modules():
-                if isinstance(m, Bottleneck1D):
+                if isinstance(m, Bottleneck):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock1D):
                     nn.init.constant_(m.bn2.weight, 0)
@@ -246,5 +251,3 @@ class ResNet1D(nn.Module):
         x2 = self.output_block2(x)  # covariance s = log(sigma)
 
         return x1, x2
-
-

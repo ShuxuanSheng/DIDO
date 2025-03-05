@@ -48,7 +48,7 @@ output:
 
 def get_loss(pred, pred_cov, targ, epoch):
     if epoch < 20:
-        loss = loss_mse(pred, targ)
+        loss = loss_mse(pred, targ)  # MSE
     else:
-        loss = loss_distribution_diag(pred, pred_cov, targ)
+        loss = loss_distribution_diag(pred, pred_cov, targ) # NLL
     return loss

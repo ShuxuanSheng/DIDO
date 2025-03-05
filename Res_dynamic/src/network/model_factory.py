@@ -1,4 +1,4 @@
-from network.model_resnet import BasicBlock1D, ResNet1D
+from .model_resnet import BasicBlock1D, ResNet1D
 
 def get_model(arch, net_config, input_dim=6, output_dim=3):
     if arch in ["resnet"]:

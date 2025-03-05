@@ -91,6 +91,7 @@ def output_debias_net(args):
                 gt_acc = np.copy(f["gt_acc"])
                 gt_gyr = np.copy(f["gt_gyr"])
                 gt_rpy = Rotation.from_quat(gt_q[:, [1, 2, 3, 0]]).as_euler('xyz', degrees=True)
+
         # bit txt格式的数据
         if (data_type == "txt"):
             inspva_file = '/home/meister/SSX/Datasets/bit_compus_1/inspvax.txt'
@@ -301,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument("--show_figure", type=bool, default=True)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--test_list", type=str, default="../../dataset/test_bit.txt")
-    parser.add_argument("--data_type", type=str, default="txt") #hdf5
+    parser.add_argument("--data_type", type=str, default="hdf5") #hdf5
     parser.add_argument("--out_dir", type=str, default="../output")
     parser.add_argument("--root_dir", type=str, default="../../dataset", help="Path to data directory")
 

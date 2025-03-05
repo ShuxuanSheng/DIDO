@@ -12,7 +12,7 @@ from os import path as osp
 
 import numpy as np
 import torch
-from ..dataloader.dataset_fb import FbSequenceDataset
+from dataloader.dataset_fb import FbSequenceDataset
 from network.model_factory import get_model
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter

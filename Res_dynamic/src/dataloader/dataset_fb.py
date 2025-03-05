@@ -138,7 +138,7 @@ class FbSequence(CompiledSequence):
         gt_q_rigid = gt_q_rigid[:,[3, 0, 1, 2]]  #
         net_gyr_rigid = np.einsum('ip,tp->ti', rot_dcm.T, net_gyr_imu)
 
-        gt_acc_rigid_body = gt_acc + np.cross(gyr_gra, np.cross(gyr_gra, trans_gra)) + np.cross(alpha_gra,trans_gra)
+        gt_acc_rigid_body = gt_acc + np.cross(gyr_gra, np.cross(gyr_gra, trans_gra)) + np.cross(alpha_gra,trans_gra) # eq(8)
         gt_acc_rigid_body = np.einsum("tpi,tp->ti", dcm_rigid, gt_acc_rigid_body)
 
         dt = np.expand_dims(np.append(np.diff(ts), np.diff(ts)[-1]),axis=1)
@@ -224,9 +224,7 @@ class FbSequenceDataset(Dataset):
         self.D = []
 
         for i in range(len(data_list)):
-            seq = FbSequence(
-                osp.join(root_dir, data_list[i]), args, data_window_config, **kwargs
-            )
+            seq = FbSequence(osp.join(root_dir, data_list[i]), args, data_window_config, **kwargs)
             kf = seq.get_kf()
             D = seq.get_D()
             feat, targ, ori_r, gt_v, gt_q, rpm = seq.get_feature(), seq.get_target(), seq.get_r(), seq.get_gt_v(), seq.get_gt_q(), seq.get_rpm()
@@ -244,7 +242,7 @@ class FbSequenceDataset(Dataset):
                     self.targets[i].shape[0] - self.future_data_size,
                     self.step_size,
                 )
-            ]
+            ] #self.features中存放了多个seq的数据，通过map建立seq及其对应数据起始～终止索引的映射关系。一个i对应多个j，例如[i=0,j=2][i=0,j=4][i=0,j=6][i=1,j=2]……
 
             self.gt_v.append(gt_v)
 
@@ -252,43 +250,25 @@ class FbSequenceDataset(Dataset):
             random.shuffle(self.index_map)
 
     def __getitem__(self, item):
+        # 返回一个样本所包含的数据，item不是显示传递的，是自动确定的
+        # item = 0 时，self.index_map[0] 是 [seq_id=0, frame_id=2]，
+        # item = 1 时，self.index_map[1] 是 [seq_id=0, frame_id=4]，
+        # item = 2 时，self.index_map[2] 是 [seq_id=0, frame_id=6]，
+        # item = 3 时，self.index_map[3] 是 [seq_id=1, frame_id=2]……
         seq_id, frame_id = self.index_map[item][0], self.index_map[item][1]
 
         # in the world frame
-        feat = self.features[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        # 提取features中指定范围的数据,目前是20帧
+        feat = self.features[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
         targ = self.targets[seq_id][frame_id]  # the beginning of the sequence
 
-        ori_r = self.ori_r[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        ori_r = self.ori_r[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
 
-        gt_v = self.gt_v[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
-        gt_q = self.gt_q[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        gt_v = self.gt_v[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
 
-        rpm = self.rpm[seq_id][
-            frame_id
-            - self.past_data_size : frame_id
-            + self.window_size
-            + self.future_data_size
-        ]
+        gt_q = self.gt_q[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
+
+        rpm = self.rpm[seq_id][frame_id - self.past_data_size: frame_id + self.window_size + self.future_data_size]
 
         kf = self.kf[seq_id]
         D = self.D[seq_id]

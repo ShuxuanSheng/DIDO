@@ -12,12 +12,12 @@ from os import path as osp
 
 import numpy as np
 import torch
-from dataloader.dataset_fb import FbSequenceDataset
-from network.losses import get_loss
-from network.model_factory import get_model
+from ..dataloader.dataset_fb import FbSequenceDataset
+from ..network.losses import get_loss
+from ..network.model_factory import get_model
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from utils.logging import logging
+from ..utils.logging import logging
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import random
@@ -94,9 +94,10 @@ def do_train(network, train_loader, device, epoch, optimizer,args):
     network.train()
 
     # for bid, (feat, targ, ts_inter,ori_r,t_start,gt_v,r_q_inte ,no_yaw_q,gt_q,rpm,kf,D,_, _) in enumerate(train_loader):
+    # 根据batch_size自动确定遍历次数，直到获取完成所有数据，例如batch_size=512，__get_item__中定义的一个样本的维度是10，那么一次遍历返回（512，10）包含多个张量（如特征、标签等）的元组
     for bid, (feat, targ, ori_r, gt_v, gt_q, rpm, kf, D, _, _) in enumerate(train_loader):
         if args.arch == "resnet":
-            feat, targ = feat.to(device), targ.to(device)
+            feat, targ = feat.to(device), targ.to(device)  # feat = [gyro, acc]  in the world frame
             optimizer.zero_grad()
 
             rpm = rpm
@@ -105,26 +106,28 @@ def do_train(network, train_loader, device, epoch, optimizer,args):
 
             gt_v_body = torch.einsum("atpi,atp->ati", ori_r, gt_v)
 
+            # 选择 ori_r 张量的最后一个时间步的所有元素与g相乘，即把g转换到b系下
+            # 如果ori_r的形状是(batch_size, time_steps, rows, cols)，那么 ori_r[:, -1, :, :] 的形状将是 (batch_size, rows, cols)
             g = torch.einsum("tpi,tp->ti", ori_r[:, -1, :, :],
                              torch.tensor([[0, 0, 9.8]]).repeat(ori_r.shape[0], 1)).to(device)
 
             feat, targ, gt_v, gt_v_body, gt_q,ori_r, rpm, kf, D = feat.to(device), targ.to(device), gt_v.to(device), gt_v_body.to(device), gt_q.to(device), ori_r.to(device), rpm.to(device), kf.to(device), D.to(device)
 
+            # 将噪声添加到 gt_v_body 中，以增加鲁棒性
             if True:
                 v_noise = 2 * (torch.rand_like(gt_v_body) - 0.5)
                 gt_v_body += v_noise
 
-            features = torch.cat(
-                (feat[:, 0:3, :], gt_v_body.permute(0, 2, 1), rpm.permute(0, 2, 1)), dim=1)
+            features = torch.cat((feat[:, 0:3, :], gt_v_body.permute(0, 2, 1), rpm.permute(0, 2, 1)), dim=1)
             y1 = (kf * torch.sum(rpm.pow(2), dim=2)).unsqueeze(2) * torch.tensor([[[0., 0., 1.]]]).repeat(
                 (rpm.shape[0], rpm.shape[1], 1)).to(device)
             y2 = - torch.sum(rpm, dim=2).unsqueeze(2) * torch.einsum("tip,tap->tai", torch.diag_embed(D), gt_v_body)
             y = y1 + y2
 
-            pred, pred_cov = network(features.to(device))
-            pred = pred + y[:, -1, :].to(device) - g
+            pred, pred_cov = network(features.to(device)) #返回的是mean和covariance # pred是动力学方程中未被建模的部分f_res,希望通过网络学习出来
+            pred = pred + y[:, -1, :].to(device) - g  # eq(7)(8)  #pred是预测的acc
 
-            loss = get_loss(pred, pred_cov, targ, epoch).to(device)
+            loss = get_loss(pred, pred_cov, targ, epoch).to(device) #target是acc的真值
 
         train_targets.append(torch_to_numpy(targ))
         train_preds.append(torch_to_numpy(pred))
@@ -132,7 +135,7 @@ def do_train(network, train_loader, device, epoch, optimizer,args):
         train_losses.append(torch_to_numpy(loss))
 
         loss = torch.mean(loss)
-        loss.backward()
+        loss.backward() #自动微分方法，用于计算 loss 对模型参数的梯度
         optimizer.step()
 
     train_targets = np.concatenate(train_targets, axis=0)
@@ -221,13 +224,9 @@ def arg_conversion(args):
         ]
     )
     net_config = {
-        "in_dim": (
-            data_window_config["past_data_size"]
-            + data_window_config["window_size"]
-            + data_window_config["future_data_size"]
-        )
-        // 4 #### jcx
-
+        "in_dim": (data_window_config["past_data_size"]
+                   + data_window_config["window_size"]
+                   + data_window_config["future_data_size"])// 4 #### jcx
     }
 
     return data_window_config, net_config
@@ -261,13 +260,9 @@ def net_train(args):
             logging.warning("val_list is not specified.")
         if args.continue_from is not None:
             if osp.exists(args.continue_from):
-                logging.info(
-                    f"Continue training from existing model {args.continue_from}"
-                )
+                logging.info(f"Continue training from existing model {args.continue_from}")
             else:
-                raise ValueError(
-                    f"continue_from model file path {args.continue_from} does not exist"
-                )
+                raise ValueError(f"continue_from model file path {args.continue_from} does not exist")
         data_window_config, net_config = arg_conversion(args)
     except ValueError as e:
         logging.error(e)
@@ -297,12 +292,8 @@ def net_train(args):
     start_t = time.time()
     train_list = get_datalist(args.train_list)
     try:
-        train_dataset = FbSequenceDataset(
-            args.root_dir, train_list, args, data_window_config, mode="train"
-        )
-        train_loader = DataLoader(
-            train_dataset, batch_size=args.batch_size, shuffle=True
-        )
+        train_dataset = FbSequenceDataset(args.root_dir, train_list, args, data_window_config, mode="train")
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     except OSError as e:
         logging.error(e)
         return
@@ -313,9 +304,7 @@ def net_train(args):
     if args.val_list is not None:
         val_list = get_datalist(args.val_list)
         try:
-            val_dataset = FbSequenceDataset(
-                args.root_dir, val_list, args, data_window_config, mode="val"
-            )
+            val_dataset = FbSequenceDataset(args.root_dir, val_list, args, data_window_config, mode="val")
             val_loader = DataLoader(val_dataset, batch_size=512, shuffle=True)
         except OSError as e:
             logging.error(e)
@@ -323,20 +312,14 @@ def net_train(args):
         logging.info("Validation set loaded.")
         logging.info(f"Number of val samples: {len(val_dataset)}")
 
-    device = torch.device(
-        "cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu"
-    )
-    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(
-        device
-    )
+    device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+    network = get_model(args.arch, net_config, args.input_dim, args.output_dim).to(device) #input_dim=10 output_dim=3
     total_params = network.get_num_params()
     logging.info(f'Network "{args.arch}" loaded to device {device}')
     logging.info(f"Total number of parameters: {total_params}")
 
     optimizer = torch.optim.Adam(network.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=0.1, patience=10, verbose=True, eps=1e-12
-    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=10, verbose=True, eps=1e-12)
     logging.info(f"Optimizer: {optimizer}, Scheduler: {scheduler}")
 
     start_epoch = 0
@@ -354,9 +337,7 @@ def net_train(args):
             start_epoch = checkpoints.get("epoch", 0)
             network.load_state_dict(checkpoints.get("model_state_dict"))
             optimizer.load_state_dict(checkpoints.get("optimizer_state_dict"))
-            logging.info(
-                f"Detected saved checkpoint, starting from epoch {start_epoch}"
-            )
+            logging.info(f"Detected saved checkpoint, starting from epoch {start_epoch}")
 
     summary_writer = SummaryWriter(osp.join(args.out_dir, "logs"))
     summary_writer.add_text("info", f"total_param: {total_params}")
